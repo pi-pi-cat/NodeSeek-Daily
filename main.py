@@ -518,7 +518,7 @@ class NodeSeekDaily:
                 return False
 
             # 执行评论
-            comment_count = self.comment_posts(max_posts=max_posts)
+            comment_count = self.comment_posts(max_posts=2)  # 暂时使用2个帖子
             logger.info(f"共成功评论 {comment_count} 个帖子")
 
             # 执行签到
