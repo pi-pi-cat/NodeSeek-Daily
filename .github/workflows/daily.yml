@@ -5,39 +5,63 @@ on:
     branches:
       - main
   schedule:
-    - cron: '00 16 * * *'  # UTC 16:00，即北京时间 00:00
+    - cron: '0 */10 * * *'  # 每10小时执行一次
 
 jobs:
   run-nodeseek-daily:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-22.04
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+      
       
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.11.8'
 
-      - name: Install Chrome and Xvfb
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver xvfb
-          echo "Chrome version:"
-          chromium-browser --version
-          echo "ChromeDriver version:"
-          chromedriver --version
+      # 添加Chrome浏览器安装步骤
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable  # 使用稳定版Chrome
+          install-dependencies: true  # 自动安装所需系统依赖
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run NodeSeek script
+      # 使用xvfb-action来提供有界面环境，解决CF验证问题
+      - name: Execute script with Xvfb
+        uses: GabrielBB/xvfb-action@v1
         env:
           NS_COOKIE: ${{ secrets.NS_COOKIE }}
-          NS_RANDOM: ${{ secrets.NS_RANDOM }}
-          HEADLESS: "true"
+          NS_USERNAME: ${{ secrets.NS_PASSWORD }}
+          NS_PASSWORD: ${{ secrets.NS_PASSWORD }}
+        with:
+          run: python main.py
+          # 添加Xvfb选项，使用1280x1024分辨率，24位色深
+          options: -screen 0 1280x1024x24
+      
+      - name: Send SUCCESS to Telegram
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_USERID: ${{ secrets.TELEGRAM_USERID }}
+        if: ${{ success() && env.TELEGRAM_TOKEN != '' && env.TELEGRAM_USERID != '' }}
         run: |
-          python nodeseek_daily.py
+          # 使用curl发送POST请求
+          curl -s -X POST "https://api.telegram.org/bot${{ env.TELEGRAM_TOKEN }}/sendMessage" \
+          -d chat_id=${{ env.TELEGRAM_USERID }} \
+          -d parse_mode=HTML \
+          -d text="✅ <b>NODESEEK</b> 每日签到成功"
+
+      - name: Send Failure Notification
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_USERID: ${{ secrets.TELEGRAM_USERID }}
+        if: ${{ failure() && env.TELEGRAM_TOKEN != '' && env.TELEGRAM_USERID != '' }}
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ env.TELEGRAM_TOKEN }}/sendMessage" \
+          -d chat_id=${{ env.TELEGRAM_USERID }} \
+          -d parse_mode=HTML \
+          -d text="❌ <b>NODESEEK</b> 每日签到失败"
