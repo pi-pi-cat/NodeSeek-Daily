@@ -1,4 +1,5 @@
 /.DS_Store
 /.venv
 /__pycache__
-.env
+# 忽略所有.env文件
+.env*
