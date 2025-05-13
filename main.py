@@ -16,7 +16,7 @@ from loguru import logger
 from DrissionPage import ChromiumPage, ChromiumOptions
 
 # 随机评论文本
-RANDOM_COMMENTS = ["bd", "绑定", "帮顶"]
+RANDOM_COMMENTS = ["bdbdbdbd", "绑定", "帮顶", "bd", "帮帮bd"]
 
 # 配置loguru日志
 logger.remove()  # 移除默认处理器
