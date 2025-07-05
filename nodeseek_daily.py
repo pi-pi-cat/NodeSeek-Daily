@@ -187,6 +187,7 @@ def nodeseek_comment(driver):
         
         # 使用URL列表进行操作
         for i, post_url in enumerate(selected_urls):
+            break
             try:
                 print(f"正在处理第 {i+1} 个帖子")
                 driver.get(post_url)
